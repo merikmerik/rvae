@@ -61,12 +61,22 @@ class LASDataProcessor:
         return self.dataframe_3
 
     def drop_nan_values(self):
-        self.dataframe_4 = self.dataframe_3.dropna()
+        self.dataframe_4a = self.dataframe_3.dropna()
+        
+        # Sonic and gamma can not be negative;
+        # density and resistivity of the earth can not be less than or equal to zero
+        self.dataframe_4 = self.dataframe_4a[
+            (self.dataframe_4a['DT'] > 0) &
+            (self.dataframe_4a['RHOB'] > 0) &
+            (self.dataframe_4a['GRL'] >= 0) &
+            (self.dataframe_4a['RES'] > 0)
+        ]
+        print("Dataframe 4 has", len(self.dataframe_4), "rows")
         return self.dataframe_4
 
 # Usage
 if __name__ == "__main__":
-    directory = r"C:\Users\Desktop\rvae\raw_data"
+    directory = r"D:\Kirabo\rvae\raw_data"
     required_properties = ['HDT', 'HAC', 'AC', 'HRHOB', 'HDEN', 'DEN', 'HGR', 'GR', 'RDEP', 'HRD', 'HNPHI', 'NEU', 'TNPH']
 
     processor = LASDataProcessor(directory)
@@ -76,5 +86,5 @@ if __name__ == "__main__":
     processor.group_logs()
     dataframe_4 = processor.drop_nan_values()
 
-    # Save the processed dataframe to file for acess to other scripts
+    # Save the processed dataframe to file for access to other scripts
     dataframe_4.to_pickle("dataframe_4.pkl")
