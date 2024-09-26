@@ -1,7 +1,7 @@
 # Define regression models
 
-# Random Forest Regressor: ( - An ensemble model using multiple decision trees, Tested with two configurations: 20 and 120 estimator)
-# MLP Regressor: (- A neural network model.Tested with two configurations: MLP1: Single hidden layer of 100 neurons. MLP2: Two hidden layers with 100 and 50 neurons.)
+# Random Forest Regressor: An ensemble model using multiple decision trees, Tested with two configurations
+# MLP Regressor: A neural network model.Tested with two configurations: MLP1 and MLP2
 
 import pandas as pd
 import numpy as np
@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from data_processor import load_data
 
 class ModelTrainer:
@@ -18,7 +19,7 @@ class ModelTrainer:
         self.y_train = y_train
 
     def train_model(self):
-        self.model.fit(self.X_train, np.ravel(self.y_train))
+        self.model.fit(self.X_train, self.y_train)
 
     def predict(self, X):
         return self.model.predict(X)
@@ -41,7 +42,7 @@ class MLPModelTrainer:
         self.y_train = y_train
         self.y_test = y_test
         self.metrics = []
-
+    
     def train_and_evaluate(self):
         for param in self.parameters:
             regr = MLPRegressor(
@@ -83,11 +84,22 @@ class MLPModelTrainer:
         mlp_metrics_df = pd.DataFrame(self.metrics)
         print("\n", mlp_metrics_df.to_string(index=False), "\n")
 
-def preprocess_data(df, feature_cols, target_col):
+def preprocess(df, feature_cols, target_col):
     X = df.iloc[:, feature_cols].values
-    y = df.iloc[:, target_col].values
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    return X_train, X_test, y_train, y_test
+    y = df.iloc[:, target_col].values.ravel() 
+
+    # Remove outliers
+    # X, y = remove_outliers(X, y)
+
+    # Scale features and target
+        from sklearn.preprocessing import StandardScaler
+    X_scaler = StandardScaler()
+    y_scaler = StandardScaler()
+
+    X_scaled = X_scaler.fit_transform(X)
+    y_scaled = y_scaler.fit_transform(y.reshape(-1, 1)).ravel()  # Reshape and ravel
+
+    return train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
 
 if __name__ == "__main__":
     # Load and preprocess the data
@@ -100,7 +112,7 @@ if __name__ == "__main__":
     feature_columns = [2, 3]  # GRL and RES columns
     target_column = [1]       # RHOB column
 
-    X_train, X_test, y_train, y_test = preprocess_data(dataframe_4, feature_columns, target_column)
+    X_train, X_test, y_train, y_test = preprocess(dataframe_4, feature_columns, target_column)
 
     # Debugging output
     print(f"X_train shape: {X_train.shape}")
@@ -123,8 +135,8 @@ if __name__ == "__main__":
 
     # Define parameters for MLP
     parameters = [
-        {'model': 'MLP1', 'hidden_layer_sizes': (100,), 'learning_rate_init': 0.001},
-        {'model': 'MLP2', 'hidden_layer_sizes': (100, 50), 'learning_rate_init': 0.01}
+        {'model': 'MLP1', 'hidden_layer_sizes': (64, 32), 'learning_rate_init': 0.0001},
+        {'model': 'MLP2', 'hidden_layer_sizes': (64, 32, 16), 'learning_rate_init': 0.001}
     ]
     mlp_trainer = MLPModelTrainer(parameters, X_train, X_test, y_train, y_test)
     mlp_trainer.train_and_evaluate()
